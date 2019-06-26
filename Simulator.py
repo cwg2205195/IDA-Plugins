@@ -3,6 +3,7 @@ import idc
 import idaapi
 import idautils
 import sys
+from collections import OrderedDict
 '''
  仿真执行函数的模拟器
 '''
@@ -10,13 +11,14 @@ import sys
 #定义了所有 ARM 下控制流转接指令汇编代码
 b_insts=[
 "B",
-"BL",
+"B.W",
+#"BL",		这个是函数调用
 "BGT",
 "BGT.W",
 "BNE",
 "BNE.W",
 "BEQ",
-"BLX",
+#"BLX",		这个是函数调用
 
 ]
 
@@ -59,12 +61,14 @@ def getFunctionBasicBlocks(insts):
 
 #获取给定地址的函数的所有指令,及指令的地址
 def getFunctionInsts(func_start):
-	insts={}
+	insts=OrderedDict()				# python 是无序字典，要用有序的
 	start = GetFunctionAttr(func_start,FUNCATTR_START)
+	#print("Start @ %x" % start )
 	if start == BADADDR:
 		return insts 
 	dism_addrs = list(idautils.FuncItems(start))
 	for addr in dism_addrs:
+		#print("addr %x " % addr)
 		insts[addr]=GetDisasm(addr)
 	return insts
 	

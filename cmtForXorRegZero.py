@@ -3,14 +3,14 @@ import idc
 import idaapi
 import idautils
 '''
-×Ô¶¯×¢ÊÍº¯ÊıÄÚ²¿£¬ËùÓĞÓÃ Òì»òÇåÁã¼Ä´æÆ÷µÄÖ¸Áî
+è‡ªåŠ¨æ³¨é‡Šå‡½æ•°å†…éƒ¨ï¼Œæ‰€æœ‰ç”¨ å¼‚æˆ–æ¸…é›¶å¯„å­˜å™¨çš„æŒ‡ä»¤
 '''
-#»ñÈ¡º¯ÊıÄÚµÄËùÓĞÖ¸ÁîµØÖ·
+#è·å–å‡½æ•°å†…çš„æ‰€æœ‰æŒ‡ä»¤åœ°å€
 dism_addr = list(idautils.FuncItems(here()))
 
 
 for ea in dism_addr:
 	if idc.GetMnem(ea) == 'xor':
-		if idc.GetOpnd(ea,0) == idc.GetOpnd(ea,1):	#Á½¸ö²Ù×÷ÊıÏàÍ¬
+		if idc.GetOpnd(ea,0) == idc.GetOpnd(ea,1):	#ä¸¤ä¸ªæ“ä½œæ•°ç›¸åŒ
 			comment = "%s = 0" % (idc.GetOpnd(ea,0))
 			idc.MakeComm(ea,comment)
