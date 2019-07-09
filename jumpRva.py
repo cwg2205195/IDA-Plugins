@@ -8,5 +8,5 @@ import sys
 '''
 
 rva = AskStr('0','输入RVA(16进制)')
-rva = int(rva,base=16)
+rva = int(rva,base=16) - 0x1000
 jumpto( get_segm_start(here())+rva)
