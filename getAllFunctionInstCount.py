@@ -4,6 +4,7 @@ import idaapi
 import idautils
 import sys
 import os
+import collections
 func_dic = {}
 
 ea = get_first_seg()
@@ -28,7 +29,7 @@ for k in func_dic:			#group functions by instruction count
 		
 
 keys = sorted(sorted_dic.keys())		#sort functions by instruction count 
-func_dic = {} 
+func_dic = collections.OrderedDict()
 for key in keys:
 	func_dic[key] = sorted_dic[key]
 
