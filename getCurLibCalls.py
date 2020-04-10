@@ -32,6 +32,8 @@ while cur_addr <= end:
 					print "addr %08X calls libFun %s\n" % (cur_addr,name)
 				elif flags & FUNC_THUNK:
 					print "addr %08X calls TnkFun %s\n" % (cur_addr,name)
+				else:
+					print "addr %08X calls ordinary function %s\n" % (cur_addr,name)
 	#print "get next inst\n"
 	cur_addr = FindCode(cur_addr,searchDir)
 print "Plugin getCurLibCalls stopped!\n"
