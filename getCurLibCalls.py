@@ -3,7 +3,7 @@ import idc
 import idaapi
 import idautils
 '''
-获取当前函数的所有库函数调用，输出调用地址 和 库函数名
+获取当前函数的所有函数调用，输出调用地址 和 函数名
 注意：没有列出子函数的库函数调用
 还有，如果是用函数指针调用库函数，也无法识别
 '''
@@ -33,7 +33,7 @@ while cur_addr <= end:
 				elif flags & FUNC_THUNK:
 					print "addr %08X calls TnkFun %s\n" % (cur_addr,name)
 				else:
-					print "addr %08X calls ordinary function %s\n" % (cur_addr,name)
+					print "addr %08X calls ordinay fun %s\n" % (cur_addr,name)
 	#print "get next inst\n"
 	cur_addr = FindCode(cur_addr,searchDir)
 print "Plugin getCurLibCalls stopped!\n"
