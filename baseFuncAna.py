@@ -46,10 +46,13 @@ class funcInfo:
             val: 1,
             necessary: false,
         },
-        'numRefs': {
-            val: [],
+        'numRefs': [{
+            val: '11 22 33',
             necessary: true,
-        },
+        },{
+            val: '65 ab de',
+            necessary: true,
+        }],
         'instRefs': {
             val: [],
             necessary: false,
@@ -111,6 +114,17 @@ class funcAnaResult:
         self.comment = ""
 
 
+# 扫描16进制数， ie: scanNumRefs("11 22 33")
+# 返回所有引用的地址ea
+def scanNumRefs(hexNumStr):
+    ret = []
+    pos = find_binary(0,3 | 0x20, hexNumStr)
+    while pos != BADADDR:
+        if pos not in ret:
+            ret.append(pos)
+        pos = find_binary(0,3 | 0x20, hexNumStr)
+    return ret
+
 class funcAnalyzer:
     '''
     函数分析器， 根据 函数信息对象， 对IDA中现有的函数，进行自动识别、添加注释，
@@ -142,6 +156,10 @@ class funcAnalyzer:
         pass
 
     def __analyzeByNumRefs(self):
+        signature_nums = self.funcInf.numRefs
+        for num in signature_nums:
+            ret = scanNumRefs(num)
+            
         pass
 
     def __analyzeByInstRefs(self):
@@ -149,4 +167,27 @@ class funcAnalyzer:
 
     # 开始分析数据库
     def analyze(self):
-        # 
+        # 目前按照自己的经验，做匹配函数 调用优先级的排列
+        # 最高级为1，最低级不限。。。
+        # 1 数字常量、 2 字符串常量、 3 栈空间大小、 4 函数调用个数
+        # 4 寄存器函数调用个数、 4 参数个数、 4 局部变量个数 、
+        # 5 引用的指令
+        ### 应该是由前几个算法识别主要的函数， 后面几个做进一步筛选。
+
+        ######################## 识别函数调用 ########################
+        __analyzeByNumRefs()
+
+        __analyzeByStrRefs()
+        ######################## 识别函数调用 ########################
+
+        ######################## 筛选函数调用 ########################
+        __analyzeByStackFrameSize()
+
+        __analyzeByFunCallCount()
+
+        __analyzeByRegFunCallCount()
+
+        __analyzeByParamCout()
+
+        __analyzeByInstRefs()
+        ######################## 筛选函数调用 ########################
