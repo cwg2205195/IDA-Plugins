@@ -113,6 +113,19 @@ class funcAnaResult:
         # 备注
         self.comment = ""
 
+class signatureAnaResult:
+    '''
+        保存匹配某个特征的所有结果。
+        @param1 signature 特征本身
+        @param2 necessary 是否为必要特征
+    '''
+    def __init__(self, signature, necessary):
+        self.signature = signature
+        self.necessary = necessary
+        self.matches = []            # 存放包含该特征的函数起始地址
+    
+    def addResult(self, item):
+        self.matches.append(item)
 
 # 扫描16进制数， ie: scanNumRefs("11 22 33")
 # 返回所有引用的地址ea
@@ -125,6 +138,10 @@ def scanNumRefs(hexNumStr):
         pos = find_binary(0,3 | 0x20, hexNumStr)
     return ret
 
+# 获取 ea 所属的函数起始地址
+def getFuncAddr(ea):
+    return get_func_attr(ea, FUNCATTR)
+
 class funcAnalyzer:
     '''
     函数分析器， 根据 函数信息对象， 对IDA中现有的函数，进行自动识别、添加注释，
@@ -136,6 +153,8 @@ class funcAnalyzer:
         self.results = []
         # 保存匹配的项数
         self.matchCount = 0
+        # 保存所有特征的匹配结果
+        self.signatureMatchResults = []
     
     def __analyzeByParamCout(self):
         pass
@@ -157,10 +176,31 @@ class funcAnalyzer:
 
     def __analyzeByNumRefs(self):
         signature_nums = self.funcInf.numRefs
+        # 遍历特征数字，ie [{val:"11 22 33",necessary:true},]
+        tmp_signatureMatchResults = []
         for num in signature_nums:
-            ret = scanNumRefs(num)
+            # 扫描一个特征数字，得到匹配的结果列表
+            ret = scanNumRefs(num.val)
+            # 构建一个匹配特征结果
+            sig = signatureAnaResult(num.val, num.necessary)
+            try:
+                for ea in ret:
+                    sig.addResult(getFuncAddr(ea))
+            except Exception as e:
+                print(e)
             
-        pass
+            tmp_signatureMatchResults.append(sig)
+        
+        # 二次筛选，求必要数字特征的交集
+        tmp_ = tmp_signatureMatchResults[0]
+        inter
+        if tmp_ != None and len(tmp_signatureMatchResults) > 1:
+            for i in range(len(tmp_signatureMatchResults)):
+                tmp_1 = tmp_signatureMatchResults[i]
+                if tmp_1.necessary == True and tmp_.necessary == True:
+                    self.signatureMatchResults = list(set(tmp_).intersection(set(tmp_1)))
+                tmp_ = self.signatureMatchResults
+
 
     def __analyzeByInstRefs(self):
         pass
