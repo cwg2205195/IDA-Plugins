@@ -178,11 +178,13 @@ class funcAnalyzer:
         signature_nums = self.funcInf.numRefs
         # 遍历特征数字，ie [{val:"11 22 33",necessary:true},]
         tmp_signatureMatchResults = []
+        li_signature_num = []
         for num in signature_nums:
             # 扫描一个特征数字，得到匹配的结果列表
             ret = scanNumRefs(num.val)
             # 构建一个匹配特征结果
             sig = signatureAnaResult(num.val, num.necessary)
+            li_signature_num.append(num.val)
             try:
                 for ea in ret:
                     sig.addResult(getFuncAddr(ea))
@@ -193,13 +195,18 @@ class funcAnalyzer:
         
         # 二次筛选，求必要数字特征的交集
         tmp_ = tmp_signatureMatchResults[0]
-        inter
+        intersec = []
         if tmp_ != None and len(tmp_signatureMatchResults) > 1:
             for i in range(len(tmp_signatureMatchResults)):
                 tmp_1 = tmp_signatureMatchResults[i]
                 if tmp_1.necessary == True and tmp_.necessary == True:
-                    self.signatureMatchResults = list(set(tmp_).intersection(set(tmp_1)))
-                tmp_ = self.signatureMatchResults
+                    intersec = list(set(tmp_.matches).intersection(set(tmp_1.matches)))
+                tmp_ = intersec
+        
+        # 添加数字特征到 特征列表
+        sigNum = signatureAnaResult(li_signature_num, True)
+        sigNum.matches = intersec
+        self.signatureMatchResults.append(sigNum)
 
 
     def __analyzeByInstRefs(self):
