@@ -5,6 +5,75 @@ import idautils
 import sys
 
 debug = True
+
+'''
+    特征类型
+'''
+number = 1
+string = 2
+frameSize = 3
+funCallCount = 4
+RegFunCallCount = 5
+instRef = 6
+
+'''
+    引用类型
+'''
+direct = 1      # 直接引用，即特征存在于函数内部
+indirect = 2    # 间接引用，函数内部通过取地址的方式引用特征
+
+class SIGNATURE:
+    '''
+        特征抽象类， 包含特征类型描述、特征值、匹配特征的地址列表及对应的函数地址
+    '''
+    # type 表示特征类型， 可选值 string, number, frameSize, funCallCount, RegFunCallCount
+    # instRef
+    def __init__(self, type):
+        self.type = type
+        # 保存匹配的特征地址
+        self.matchAddrs = []
+        # 保存引用该特征的所有函数起始地址
+        self.refByFuncs = []
+        self.sigRefsDic = dict()
+
+    def setSigName(self, name):
+        self.name = name
+    
+    def setNecessary(self, necessary):
+        self.necessary = necessary
+
+    def setVal(self, val):
+        self.val = val
+    
+    # 添加一个引用该特征的函数地址
+    def addRefFunc(self, funcAddr):
+        if funcAddr not in self.refByFuncs:
+            self.refByFuncs.append(funcAddr)
+
+    # 获取所有引用该特征的函数地址列表
+    def getRefFunc(self):
+        return self.refByFuncs
+
+    '''
+        添加一个引用该特征的函数地址
+        @param sigAddr  特征的地址
+        @param funcAddr 引用该特征的函数地址
+        @param refType  引用类型，可能的值： direct、indirect。 
+    '''
+    def addSigRef(self, sigAddr, funcAddr, refType):
+        if sigAddr not in self.sigRefsDic:
+            self.sigRefsDic[sigAddr] = dict()
+        if funcAddr not in self.sigRefsDic[sigAddr]:
+            self.sigRefsDic[sigAddr][funcAddr] = refType
+
+    '''
+        获取当前特征的所有引用
+    '''
+    def getAllRef(self):
+        if debug == True:
+            print(self.sigRefsDic)
+        return self.sigRefsDic
+
 class funcInfo:
     '''函数信息基类，记录函数的各种信息，包括参数个数、返回值类型、函数名、局部变量个数、局部变量空间大小、
     函数原型字符串、函数备注、引用的字符串列表、 调用的函数个数、 指针函数调用的个数（用寄存器调用）、 
@@ -85,6 +154,8 @@ class funcInfo:
         self.numRefs = []
         # 特征指令列表， 如 cmp 、 等特殊指令。。。
         self.instRefs = []
+        # 保存函数的所有特征
+        self.signatures = []
 
     # 解析一个对象到 funcInfo 
     def parseInfo(self, info):
@@ -104,6 +175,25 @@ class funcInfo:
         except Exception as e:
             print(e)
         
+    # 添加一个特征到当前函数
+    def addSignature(self, signature):
+        self.signatures.append(signature)
+
+    # 获取所有数字特征
+    def getSigNums(self):
+        ret = []
+        for i in self.signatures:
+            if i.type == number:
+                ret.append(i)
+        return ret
+    
+    # 获取特定类型的特征列表
+    def getSigByType(self, type):
+        ret = []
+        for i in self.signatures:
+            if i.type == type:
+                ret.append(i)
+        return ret
 
 class funcAnaResult:
     '''
@@ -140,7 +230,7 @@ def scanNumRefs(hexNumStr):
     while pos != BADADDR:
         if pos not in ret:
             ret.append(pos)
-        pos = find_binary(0,3 | 0x20, hexNumStr)
+        pos = find_binary(pos,3 | 0x20, hexNumStr)
     if debug == True:
         print("[#]Scan num results: ")
         print(ret)
@@ -148,7 +238,7 @@ def scanNumRefs(hexNumStr):
 
 # 获取 ea 所属的函数起始地址
 def getFuncAddr(ea):
-    return get_func_attr(ea, FUNCATTR)
+    return get_func_attr(ea, FUNCATTR_START)
 
 class funcAnalyzer:
     '''
@@ -156,6 +246,7 @@ class funcAnalyzer:
     如果匹配到的结果有多个，则命名用数字递增，并输出结果到一个对象列表， 由数据展示层展示。
     '''
     def __init__(self, finfo):
+        print("\n---------------------------------------\n[+]Initializing analysis for function %s" % finfo.name )
         self.funcInf = finfo
         # 保存分析结果列表
         self.results = []
@@ -164,6 +255,12 @@ class funcAnalyzer:
         # 保存所有特征的匹配结果
         self.signatureMatchResults = []
     
+    def __makeFunction(self):
+        # 获取所有数字类型特征
+        signature_nums = self.funcInf.getSigByType(number)
+        for sig_num in signature_nums:
+
+
     def __analyzeByParamCout(self):
         pass
 
@@ -183,49 +280,85 @@ class funcAnalyzer:
         pass
 
     def __analyzeByNumRefs(self):
-        signature_nums = self.funcInf.numRefs
+        # signature_nums = self.funcInf.numRefs
+        signature_nums = self.funcInf.getSigByType(number)
+        for sigNum in signature_nums:
+            ret =scanNumRefs(sigNum.val)
+            if debug == True:
+                print("[+]Number ref results :")
+                print(ret)
+            sigNum.matchAddrs = ret
+            # 获取所有引用该特征的函数地址？
+            # 遍历找到的特征， 为每一个特征进行交叉引用搜索
+            for ea in ret:
+                try:
+                    va = getFuncAddr(ea)
+                    if va != BADADDR:
+                        #sigNum.addRefFunc(ea)
+                        # 添加一个直接引用
+                        sigNum.addSigRef(ea, va, direct)
+                    # 搜索间接引用
+                    for xref in XrefsTo(ea, 0):
+                        # print(xref.type, XrefTypeName(xref.type),' from ', hex(xref.frm), ' to ', hex(xref.to))
+                        va = getFuncAddr(xref.frm)  # 获取引用数据的函数地址
+                        if va != BADADDR:
+                            sigNum.addSigRef(ea, va, indirect)
+
+                except Exception as e:
+                    print("Error while finding func start address")
+                    print(e)
+
+        if debug == True:
+            print("[+]Output all referring functions: ")
+            for sigNum in signature_nums:
+                sigNum.getAllRef()
+                # li = sigNum.getRefFunc()
+                # for i in li:
+                #     print("%x" % i)
         # 遍历特征数字，ie [{val:"11 22 33",necessary:true},]
-        tmp_signatureMatchResults = []
-        li_signature_num = []
-        print("[+]Debug out signums")
-        print(signature_nums)
-        for num in signature_nums:
-            # 扫描一个特征数字，得到匹配的结果列表
-            ret = scanNumRefs(num["val"])
-            print("[+]Debug out ")
-            print(ret)
-            # 构建一个匹配特征结果
-            sig = signatureAnaResult(num["val"], num["necessary"])
-            li_signature_num.append(num["val"])
-            try:
-                for ea in ret:
-                    sig.addResult(getFuncAddr(ea))
-            except Exception as e:
-                print(e)
+        # tmp_signatureMatchResults = []
+        # li_signature_num = []
+        # print("[+]Debug out signums")
+        # print(signature_nums)
+        # for num in signature_nums:
+        #     # 扫描一个特征数字，得到匹配的结果列表
+        #     ret = scanNumRefs(num["val"])
+        #     if debug == True:
+        #         print("[+]Number ref results :")
+        #         print(ret)
+        #     # 构建一个匹配特征结果
+        #     sig = signatureAnaResult(num["val"], num["necessary"])
+        #     li_signature_num.append(num["val"])
+        #     try:
+        #         for ea in ret:
+        #             sig.addResult(getFuncAddr(ea))
+        #     except Exception as e:
+        #         print(e)
             
-            tmp_signatureMatchResults.append(sig)
+        #     tmp_signatureMatchResults.append(sig)
         
-        # 二次筛选，求必要数字特征的交集
-        try:
-            tmp_ = tmp_signatureMatchResults[0]
-            intersec = []
-            if tmp_ != None and len(tmp_signatureMatchResults) > 0:
-                for i in range(len(tmp_signatureMatchResults)):
-                    tmp_1 = tmp_signatureMatchResults[i]
-                    print("\ndebug")
-                    print(tmp_.matches)
-                    if tmp_1["necessary"] == True and tmp_["necessary"] == True:
-                        intersec = list(set(tmp_.matches).intersection(set(tmp_1.matches)))
-                        tmp_ = signatureAnaResult("",True)
-                        tmp_.matches = intersec
+        # # 二次筛选，求必要数字特征的交集
+        # try:
+        #     tmp_ = tmp_signatureMatchResults[0]
+        #     intersec = []
+        #     if tmp_ != None and len(tmp_signatureMatchResults) > 0:
+        #         for i in range(len(tmp_signatureMatchResults)):
+        #             tmp_1 = tmp_signatureMatchResults[i]
+        #             if debug == True:
+        #                 print("\n matches are:")
+        #                 print(tmp_.matches)
+        #             if tmp_1["necessary"] == True and tmp_["necessary"] == True:
+        #                 intersec = list(set(tmp_.matches).intersection(set(tmp_1.matches)))
+        #                 tmp_ = signatureAnaResult("",True)
+        #                 tmp_.matches = intersec
             
-            # 添加数字特征到 特征列表
-            sigNum = signatureAnaResult(li_signature_num, True)
-            sigNum.matches = tmp_.matches
-            self.signatureMatchResults.append(sigNum)
-        except Exception as e:
-            print("[!]Exception")
-            print(e)
+        #     # 添加数字特征到 特征列表
+        #     sigNum = signatureAnaResult(li_signature_num, True)
+        #     sigNum.matches = tmp_.matches
+        #     self.signatureMatchResults.append(sigNum)
+        # except Exception as e:
+        #     print("[!]Exception")
+        #     print(e)
         
 
 
@@ -259,21 +392,60 @@ class funcAnalyzer:
         self.__analyzeByInstRefs()
         ######################## 筛选函数调用 ########################
 
-KeyExpansion = {
-    'name': 'KeyExpansion',
-    'numRefs': [{
-            'val': '7b777c63',
-            'necessary': True,
-        }
-    ]
-}
+# KeyExpansion = {
+#     'name': 'KeyExpansion',
+#     'numRefs': [{
+#             'val': '7b777c63',
+#             'necessary': True,
+#         }
+#     ]
+# }
 
-info_KeyExpansion = funcInfo("KeyExpansion")
-info_KeyExpansion.parseInfo(KeyExpansion)
-print('numref is ')
-print(info_KeyExpansion.numRefs)
-ana = funcAnalyzer(info_KeyExpansion)
+# 创建一个函数
+compute_key = funcInfo("compute_key")
+# 创建一个特征变量
+sig_num = SIGNATURE(number)
+sig_num.setSigName("compute_key's signature number")
+sig_num.setNecessary(True)
+sig_num.setVal("2710")
 
+# 加入到函数特征
+compute_key.addSignature(sig_num)
+# 创建一个分析器
+ana = funcAnalyzer(compute_key)
+# 开启分析
 ana.analyze()
+
+# 创建一个函数
+unsetCheckKey = funcInfo("UncheckedSetKey")
+# 创建一个特征变量
+sig_num_unsetCheckKey = SIGNATURE(number)
+sig_num_unsetCheckKey.setNecessary(True)
+sig_num_unsetCheckKey.setVal("7b777c63")
+unsetCheckKey.addSignature(sig_num_unsetCheckKey)
+
+# 创建一个分析器
+ana = funcAnalyzer(unsetCheckKey)
+# 开启分析
+ana.analyze()
+
+# DES算法相关函数
+DES_set_key_unchecked = funcInfo("DES_set_key_unchecked")
+sig_num_DES_set_key_unchecked = SIGNATURE(number)
+sig_num_DES_set_key_unchecked.setNecessary(True)
+sig_num_DES_set_key_unchecked.setVal("55555555")
+DES_set_key_unchecked.addSignature(sig_num_DES_set_key_unchecked)
+ana = funcAnalyzer(DES_set_key_unchecked)
+ana.analyze()
+
 print("[#]Analyse finished...")
-print(ana.signatureMatchResults)
+# print(ana.signatureMatchResults)
+# info_KeyExpansion = funcInfo("KeyExpansion")
+# info_KeyExpansion.parseInfo(KeyExpansion)
+# print('numref is ')
+# print(info_KeyExpansion.numRefs)
+# ana = funcAnalyzer(info_KeyExpansion)
+
+# ana.analyze()
+# print("[#]Analyse finished...")
+# print(ana.signatureMatchResults)
