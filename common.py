@@ -24,11 +24,11 @@ def get_arch():
     endian = "big" if is_be else "little"
     #print 'Processor: {}, {}bit, {} endian'.format(info.procName, bits, endian)
     if info.procName=="metapc":
-        ret["cpu"]= "x86"
+        ret["platform"]= "x86"
     elif info.procName=="ARM":
-        ret["cpu"]= "ARM"
+        ret["platform"]= "ARM"
     else:
-        ret["cpu"]="unknown"
+        ret["platform"]="unknown"
     ret["bits"] = bits
     ret["endian"] = endian
     return ret
@@ -36,7 +36,7 @@ def get_arch():
 # 获取函数的属性
 # @param funAddr 函数起始地址
 def getFuncFlags(funAddr):
-    start = GetFunctionAttr(funAddr,FUNCATTR_START)
+    start = get_func_attr(funAddr,FUNCATTR_START)
     flags = idc.GetFunctionFlags(start)
     return flags
 
@@ -50,6 +50,11 @@ def isLibFun(funAddr):
 def isTunkFun(funAddr):
     return getFuncFlags(funAddr) & FUNC_THUNK
 
+# 获取当前函数的所有指令的地址
+# def get_func_inst_addr(funAddr):
+#     start_addr = GetFunctionAttr(funAddr,FUNCATTR_START)
+#     return list(idautils.FuncItems(start_addr))
+
 # 获取给定地址的函数的所有交叉引用
 # @param start_addr 函数起始地址
 # @param platform 平台： ARM/x86
@@ -61,7 +66,8 @@ def isTunkFun(funAddr):
 }
 """
 def get_ref_funs(start_addr, platform):
-    start_addr = GetFunctionAttr(start_addr,FUNCATTR_START)
+    print(start_addr)
+    start_addr = get_func_attr(start_addr,FUNCATTR_START)
     if start_addr == BADADDR:
         return {}
     ret = {}
@@ -69,7 +75,7 @@ def get_ref_funs(start_addr, platform):
         ret["func_name"] = get_func_name(start_addr)
         dism_addrs = list(idautils.FuncItems(start))
         for addr in dism_addrs:
-			inst = GetDisasm(addr)
+            inst = GetDisasm(addr)
             if platform == "x86":
                 keyword = "call"
             elif platform == "ARM":

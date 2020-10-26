@@ -1,9 +1,10 @@
 ﻿# -*- coding: UTF-8 -*-
-import idc
+from idc import *
+from idaapi import *
+from idautils import *
+from sys import *
 import idaapi
-import idautils
-import sys
-import idaapi
+import common
 from common import *
 """
 根据用户指定的递归层级，列出当前函数的交叉引用图。 注意跨平台，支持 x86汇编、arm汇编。
@@ -27,6 +28,8 @@ class Engine:
         self.depth = depth  # 设置最大搜索深度
 
 
-search_Depth = AskStr("1000","所搜深度(设定较小值速度快但结果不全(1 to 5))")
-searchDep=int(searchDep)
-e=Engine(target,searchDep)
+refs = get_ref_funs(here(),arch["platform"])
+print(refs)
+# search_Depth = AskStr("1000","所搜深度(设定较小值速度快但结果不全(1 to 5))")
+# searchDep=int(searchDep)
+# e=Engine(target,searchDep)
