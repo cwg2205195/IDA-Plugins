@@ -255,6 +255,12 @@ class funcAnalyzer:
         # 保存所有特征的匹配结果
         self.signatureMatchResults = []
     
+    def __makeFunction(self):
+        # 获取所有数字类型特征
+        signature_nums = self.funcInf.getSigByType(number)
+        for sig_num in signature_nums:
+
+
     def __analyzeByParamCout(self):
         pass
 
@@ -405,6 +411,10 @@ sig_num.setVal("2710")
 
 # 加入到函数特征
 compute_key.addSignature(sig_num)
+# 创建一个分析器
+ana = funcAnalyzer(compute_key)
+# 开启分析
+ana.analyze()
 
 # 创建一个函数
 unsetCheckKey = funcInfo("UncheckedSetKey")
