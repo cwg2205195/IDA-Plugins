@@ -10,6 +10,7 @@ import sys
 ea = here()
 rva = ea - get_segm_start(here()) + 0x1000
 print hex(rva)
-
+print("\nd mod.base(dis.sel()) + %s\n" % hex(rva)[:-1])
+print("\nbp mod.base(dis.sel()) + %s\n" % hex(rva)[:-1])
 #in x64dbg:
 # d mov.base(dis.sel()) + xxx

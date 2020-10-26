@@ -41,8 +41,12 @@ ea = here()
 
 result=getStringRefs(ea)
 
+seg_start = get_segm_start(ea)
+
+print("########################### get current function string refs begin ###########################")
+#print("seg start @ %x" % seg_start)
 for key in result.keys():
-    print("%x -> %s" % (key,result[key]))
+    print("%x [ d mod.base(dis.sel()) + 0x%x ] -> %s" % (key, key-seg_start + 0x1000, result[key]))
 
-
+print("########################### get current function string refs end ###########################")
 
