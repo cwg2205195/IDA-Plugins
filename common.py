@@ -44,8 +44,54 @@ def getFuncFlags(funAddr):
 # @param funAddr 函数起始地址
 # @returns true|false
 def isLibFun(funAddr):
-    return GetFunctionAttr() & FUNC_LIB
+    return getFuncFlags(funAddr) & FUNC_LIB
 
-#判断给定地址是否为 trunk fun 
+#判断给定地址是否为 thunk fun 
 def isTunkFun(funAddr):
-    return GetFunctionAttr() & FUNC_THUNK
+    return getFuncFlags(funAddr) & FUNC_THUNK
+
+# 获取给定地址的函数的所有交叉引用
+# @param start_addr 函数起始地址
+# @param platform 平台： ARM/x86
+# @returns 
+"""
+{
+    func_name:"name",
+
+}
+"""
+def get_ref_funs(start_addr, platform):
+    start_addr = GetFunctionAttr(start_addr,FUNCATTR_START)
+    if start_addr == BADADDR:
+        return {}
+    ret = {}
+    try:
+        ret["func_name"] = get_func_name(start_addr)
+        dism_addrs = list(idautils.FuncItems(start))
+        for addr in dism_addrs:
+			inst = GetDisasm(addr)
+            if platform == "x86":
+                keyword = "call"
+            elif platform == "ARM":
+                keyword = "BL"
+            else:
+                pass
+            if keyword in inst:
+                name = GetOpnd(addr,0)	#获取call 后面的字符串
+                OpType = GetOpType(addr,0)	
+                if OpType == o_reg:
+                    pass
+                elif OpType == o_near:
+                    callee_addr = LocByName(name)
+                    if callee_addr != BADADDR:
+                        ret[callee_addr] = {"func_name":name}
+                elif OpType == o_mem:
+                    callee_addr = GetOperandValue(addr,0)
+                    if callee_addr != BADADDR:
+                        ret[callee_addr] = "unknown_mem"
+                
+
+
+    except Exception as e:
+        print(e)
+    return ret
