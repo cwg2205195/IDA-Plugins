@@ -1,13 +1,14 @@
 ﻿{
-    "func_name":"level_1",
-    "addr_1":{
-        "func_name":"level_2",
-        "addr_3":{
-            "func_name":"level_3",
-            "addr_4":{
-                "addr_5":"CreateWindow",
-                "addr_6":"UpdateWindow"
-            }
-        }
-    }
+  "RTMP_Write": {
+    "AMF_EncodeString 6699a": "AMF_EncodeString",
+    "AMF_DecodeInt24 66918": "AMF_DecodeInt24",
+    "RTMPPacket_Alloc 66964": "RTMPPacket_Alloc",
+    "memcpy 669c8": "memcpy",
+    "RTMP_Log 6697c": "RTMP_Log",
+    "RTMPPacket_Free 669ec": "RTMPPacket_Free",
+    "locret_66A10 668e8": "locret_66A10",
+    "AMF_DecodeInt24 6690e": "AMF_DecodeInt24",
+    "RTMP_SendPacket 669e4": "RTMP_SendPacket"
+  },
+  "RTMP_Write 668b4": {}
 }

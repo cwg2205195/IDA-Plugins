@@ -61,19 +61,26 @@ def isTunkFun(funAddr):
 # @returns 
 """
 {
-    func_name:"name",
+    "func_name":{
+        "addr_1":"func_name2",
+        "addr_2":"func_name3",
+    }
 
 }
 """
 def get_ref_funs(start_addr, platform):
-    print(start_addr)
-    start_addr = get_func_attr(start_addr,FUNCATTR_START)
+    # print(start_addr)
+    start_addr = GetFunctionAttr(start_addr,FUNCATTR_START)
     if start_addr == BADADDR:
         return {}
     ret = {}
+    # print("[+]Funstart@ %x" %start_addr)
     try:
-        ret["func_name"] = get_func_name(start_addr)
-        dism_addrs = list(idautils.FuncItems(start))
+        ret["%s %x"%(get_func_name(start_addr), start_addr)] = {}
+        # print(ret)
+        sub_tree = {}
+        dism_addrs = list(idautils.FuncItems(start_addr))
+        # print(dism_addrs)
         for addr in dism_addrs:
             inst = GetDisasm(addr)
             if platform == "x86":
@@ -84,7 +91,8 @@ def get_ref_funs(start_addr, platform):
                 pass
             if keyword in inst:
                 name = GetOpnd(addr,0)	#获取call 后面的字符串
-                OpType = GetOpType(addr,0)	
+                sub_tree["%s %x"%(name,addr)] = name
+                '''OpType = GetOpType(addr,0)	
                 if OpType == o_reg:
                     pass
                 elif OpType == o_near:
@@ -95,9 +103,13 @@ def get_ref_funs(start_addr, platform):
                     callee_addr = GetOperandValue(addr,0)
                     if callee_addr != BADADDR:
                         ret[callee_addr] = "unknown_mem"
-                
-
-
+                '''
+        # print("sub_tree")
+        # print(sub_tree)
+        ret["%s %x"%(get_func_name(start_addr), start_addr)] = sub_tree
     except Exception as e:
-        print(e)
+        print("exception")
+        print(e.message)
+    # print("ret:")
+    # print(ret)
     return ret
