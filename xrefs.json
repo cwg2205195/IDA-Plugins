@@ -1,14 +1,61 @@
 ﻿{
-  "RTMP_Write": {
-    "AMF_EncodeString 6699a": "AMF_EncodeString",
-    "AMF_DecodeInt24 66918": "AMF_DecodeInt24",
-    "RTMPPacket_Alloc 66964": "RTMPPacket_Alloc",
-    "memcpy 669c8": "memcpy",
-    "RTMP_Log 6697c": "RTMP_Log",
-    "RTMPPacket_Free 669ec": "RTMPPacket_Free",
-    "locret_66A10 668e8": "locret_66A10",
-    "AMF_DecodeInt24 6690e": "AMF_DecodeInt24",
-    "RTMP_SendPacket 669e4": "RTMP_SendPacket"
-  },
-  "RTMP_Write 668b4": {}
+  "_main 401582": {
+    "___main 401588": {},
+    "__Z6level5v 40158d": {
+      "_printf 401571": "_printf",
+      "__Z6level4v 401576": {
+        "_printf 401558": "_printf",
+        "__Z6level3v 40155d": {
+          "_printf 40153a": "_printf",
+          "__Z6level2v 40153f": {
+            "_printf 401521": "_printf",
+            "__Z6level1v 401526": { "_printf 40150d": "_printf" }
+          },
+          "__Z6level1v 401544": { "_printf 40150d": "_printf" }
+        }
+      },
+      "__Z6level2v 40157b": {
+        "_printf 401521": "_printf",
+        "__Z6level1v 401526": { "_printf 40150d": "_printf" }
+      }
+    }
+  }
 }
+
+|--_main 401582
+|    |--___main 401588
+|    |--__Z6level5v 40158d
+|    | |--__Z6level4v 401576
+|    | | |--_printf
+|    | | |--__Z6level3v 40155d
+|    | | | |--_printf
+|    | | | |--__Z6level1v 401544
+|    | | | | |--_printf
+|    | | | |--__Z6level2v 40153f
+|    | | | | |--_printf
+|    | | | | |--__Z6level1v 401526
+|    | | | | | |--_printf
+|    | |--_printf
+|    | |--__Z6level2v 40157b
+|    | | |--_printf
+|    | | |--__Z6level1v 401526
+|    | |   |--_printf
+
+|--_main 401582
+|    |--___main 401588
+|    |--__Z6level5v 40158d
+|    | |--__Z6level4v 401576
+|    | | |--_printf
+|    | | |--__Z6level3v 40155d
+|    | | | |--_printf
+|    | | | |--__Z6level1v 401544
+|    | | | | |--_printf
+|    | | | |--__Z6level2v 40153f
+|    | | | | |--_printf
+|    | | | | |--__Z6level1v 401526
+|    | | | | | |--_printf
+|    | |--_printf
+|    | |--__Z6level2v 40157b
+|    | | |--_printf
+|    | | |--__Z6level1v 401526
+|    | | | |--_printf

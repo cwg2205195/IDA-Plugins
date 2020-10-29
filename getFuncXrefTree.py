@@ -19,9 +19,12 @@ rtmp_init 40269e
     Buffer_init 401231 
 """
 
-
+debug  = 0
+# 获取平台
 arch = get_arch()
-print(arch)
+# print(arch)
+# 设置函数过滤，部分函数不跟进，如通用API
+func_name_filters = ["print"]
 
 class Engine:
     def __init__(self,depth, arch):
@@ -29,23 +32,40 @@ class Engine:
         self.arch = arch
 
     def rec_search(self, func_entry, depth):
+        if debug == 1:
+            print("[+]rec_search @ %x depth=%d" %(func_entry, depth))
+        # 获取当前函数的所有子函数调用
         refs = get_ref_funs(func_entry,self.arch)
+        # 生成 Key  用户获取子函数调用
         k = "%s %x"%(get_func_name(func_entry), func_entry)
-        # print("k=%s"%k)
-        # print(refs)
         sub_tree = refs[k]
-        print("sub_tree\n")
-        print(sub_tree)
-        for key in sub_tree:
-            # print(key)
-            func_name = sub_tree[key]
-            # print("key %s" % key)
-            # print(func_name)
-            # print("funname: %s" %func_name)
-            funAddr = LocByName(func_name)
-            if funAddr != BADADDR and depth > 0:
-                sub_fun_refs = self.rec_search(funAddr,depth - 1)
-                sub_tree[key] = sub_fun_refs
+        if debug == 1:
+            print("----------------------")
+            print("k=%s"%k)
+            print(json.dumps(refs))
+            print("sub_tree:")
+            print(json.dumps( sub_tree))
+            print("----------------------")
+        if depth > 0 :
+            for key in sub_tree:
+                try:
+                    func_name = sub_tree[key]
+                    # 函数名过滤， 预配置的函数不跟进
+                    skip = False
+                    for name in func_name_filters:
+                        if name in func_name :
+                            skip = True
+                            break
+                    if skip == True:
+                        continue
+                    funAddr = LocByName(func_name)
+                    if funAddr != BADADDR:
+                        sub_fun_refs = self.rec_search(funAddr,depth - 1)
+                        tmp_k = "%s %x"%(func_name, funAddr)
+                        refs[k][key] = sub_fun_refs[tmp_k]
+                except Exception as e:
+                    print("Exception:" + e.message)
+                    pass
         return refs
 
     def start(self, start_addr):
@@ -55,9 +75,23 @@ class Engine:
 
 # refs = get_ref_funs(here(),arch["platform"])
 # print(refs)
-engine = Engine(5,arch["platform"])
+search_Depth = AskStr("10","所搜深度(设定较小值速度快但结果不全(1 to 5))")
+engine = Engine(int(search_Depth),arch["platform"])
 map = engine.start(GetFunctionAttr(here(),FUNCATTR_START))
+print("############################")
 print(map)
-# search_Depth = AskStr("1000","所搜深度(设定较小值速度快但结果不全(1 to 5))")
+print("############################")
+drawer = obj_draw(map)
+drawer.draw()
+print("############################")
+# json.dumps 不要进行排序，否则调用次序会乱
+out = json.dumps(map,sort_keys=False)
+print(out)
+obj = json.loads(out)
+print("############################")
+drawer = obj_draw(obj)
+drawer.draw()
+print("############################")
+print(obj)
 # searchDep=int(searchDep)
 # e=Engine(target,searchDep)
