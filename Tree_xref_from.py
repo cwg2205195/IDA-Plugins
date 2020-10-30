@@ -1,10 +1,15 @@
-﻿# -*- coding: UTF-8 -*-
+# -*- coding: UTF-8 -*-
 import idc
 import idaapi
 import idautils
 import sys
 import idaapi
+from json import loads
+from json import JSONDecoder
 import collections
+from collections import OrderedDict
+
+custom_decoder = JSONDecoder(object_pairs_hook=OrderedDict)
 
 # 获取 处理器架构：ARM|metapc 、 位数、 端序
 # ret: {'bits': 32, 'cpu': 'ARM', 'endian': 'little'}
@@ -51,11 +56,6 @@ def isLibFun(funAddr):
 def isTunkFun(funAddr):
     return getFuncFlags(funAddr) & FUNC_THUNK
 
-# 获取当前函数的所有指令的地址
-# def get_func_inst_addr(funAddr):
-#     start_addr = GetFunctionAttr(funAddr,FUNCATTR_START)
-#     return list(idautils.FuncItems(start_addr))
-
 # 获取给定地址的函数的所有交叉引用
 # @param start_addr 函数起始地址
 # @param platform 平台： ARM/x86
@@ -70,18 +70,14 @@ def isTunkFun(funAddr):
 }
 """
 def get_ref_funs(start_addr, platform):
-    # print(start_addr)
     start_addr = GetFunctionAttr(start_addr,FUNCATTR_START)
     if start_addr == BADADDR:
         return {}
     ret = collections.OrderedDict()     # 使用有序字典
-    # print("[+]Funstart@ %x" %start_addr)
     try:
         ret["%s %x"%(get_func_name(start_addr), start_addr)] = collections.OrderedDict()
-        # print(ret)
         sub_tree = collections.OrderedDict()
         dism_addrs = list(idautils.FuncItems(start_addr))
-        # print(dism_addrs)
         for addr in dism_addrs:
             inst = GetDisasm(addr)
             if platform == "x86":
@@ -114,18 +110,14 @@ class obj_draw():
 
     # 递归进入一层，记录层级以及是否有兄弟节点
     def path_step_in(self, level, has_sibling):
-        print("step in level %d has sibling %d"%(level, has_sibling))
         self.path.append({
             "level": level,
             "has_sibling": has_sibling
         })
-        print(self.path)
     
     # 递归返回一层
     def path_step_out(self):
         ret = self.path.pop()
-        print("step out")
-        print(ret)
 
     # 绘制当前行
     # @param str 展示的数据
@@ -133,9 +125,20 @@ class obj_draw():
     def draw_cur_line(self, str, level):
         ret = ""
         if level == 1:
+            # ret = "├─" + str + "\n"
+            # content = u"\xe2\x94\x9c\x94\x80"
+            # content.encode('latin1').decode('utf8')
+            # ret = content + str + "\n"
             ret = "|--" + str + "\n"
+            # u' '.join((agent_contact, agent_telno)).encode('utf-8').strip()
+            # ret = unicode("├─").encode('utf-8') + str + "\n"
         else:
+            # ret = "|" + "  " * level + "|--" + str + "\n"
+            # ret = "│" + "  " * level + "├─" + str + "\n"
             ret = "|" + "  " * level + "|--" + str + "\n"
+            # ret = u"\xe2\x94\x82".encode('latin1').decode('utf8')  
+            # + "  " * level + u"\xe2\x94\x9c\x94\x80".encode('latin1').decode('utf8') + str + "\n"
+            # ret = u"".join("├─").encode('utf-8')+ str + "\n"
             # 替换特定位置 " " 为 │
             for node in self.path:
                 if node["has_sibling"] == True:
@@ -146,7 +149,6 @@ class obj_draw():
     def draw_cur_level(self, cur_obj, level):
         # 获取当前节点个数
         item_count = len(cur_obj)
-        print("level %d has %d nodes" % (level, item_count))
         for key in cur_obj:
             val = cur_obj[key]
             # 当前对象，剩余还未渲染节点个数, --item_count 有问题 - -！
@@ -154,6 +156,14 @@ class obj_draw():
             if type(val) == str:
                 self.picture += self.draw_cur_line(val, level)
             elif type(val) == dict:
+                if len(val) == 0:
+                    self.picture += self.draw_cur_line(key, level)
+                    continue
+                self.path_step_in(level, item_count>0)
+                self.picture += self.draw_cur_line(key, level)
+                self.draw_cur_level(val, level+1)
+                self.path_step_out()
+            elif type(val) == OrderedDict:
                 if len(val) == 0:
                     self.picture += self.draw_cur_line(key, level)
                     continue
@@ -172,3 +182,84 @@ class obj_draw():
         self.draw_cur_level(self.obj, 1)
         print("[+]Done")
         print(self.picture)
+
+
+"""
+根据用户指定的递归层级，列出当前函数的交叉引用图。 注意跨平台，支持 x86汇编、arm汇编。
+格式：
+function_name  call_inst_addr
+ie:
+rtmp_init 40269e
+    PCM_init 4011D9 
+        Buffer_init 40acbd 
+    H264_init 4011fe 
+        Buffer_init 40ace2 
+    Buffer_init 401231 
+"""
+
+debug  = 0
+# 获取平台
+arch = get_arch()
+# print(arch)
+# 设置函数过滤，部分函数不跟进，如通用API
+func_name_filters = ["print"]
+
+class Engine:
+    def __init__(self,depth, arch):
+        self.depth = depth  # 设置最大搜索深度
+        self.arch = arch
+
+    def rec_search(self, func_entry, depth):
+        if debug == 1:
+            print("[+]rec_search @ %x depth=%d" %(func_entry, depth))
+        # 获取当前函数的所有子函数调用
+        refs = get_ref_funs(func_entry,self.arch)
+        # 生成 Key  用户获取子函数调用
+        k = "%s %x"%(get_func_name(func_entry), func_entry)
+        sub_tree = refs[k]
+        if debug == 1:
+            print("----------------------")
+            print("k=%s"%k)
+            print(json.dumps(refs))
+            print("sub_tree:")
+            print(json.dumps( sub_tree))
+            print("----------------------")
+        if depth > 0 :
+            for key in sub_tree:
+                try:
+                    func_name = sub_tree[key]
+                    # 函数名过滤， 预配置的函数不跟进
+                    skip = False
+                    for name in func_name_filters:
+                        if name in func_name :
+                            skip = True
+                            break
+                    if skip == True:
+                        continue
+                    funAddr = LocByName(func_name)
+                    if funAddr != BADADDR:
+                        sub_fun_refs = self.rec_search(funAddr,depth - 1)
+                        tmp_k = "%s %x"%(func_name, funAddr)
+                        refs[k][key] = sub_fun_refs[tmp_k]
+                except Exception as e:
+                    print("Exception:" + e.message)
+                    pass
+        return refs
+
+    def start(self, start_addr):
+        return self.rec_search(start_addr, self.depth)
+
+
+
+# refs = get_ref_funs(here(),arch["platform"])
+# print(refs)
+search_Depth = AskStr("10","所搜深度(设定较小值速度快但结果不全(1 to 5))")
+engine = Engine(int(search_Depth),arch["platform"])
+map = engine.start(GetFunctionAttr(here(),FUNCATTR_START))
+# json.dumps 不要进行排序，否则调用次序会乱
+out = json.dumps(map,sort_keys=False, ensure_ascii=False)
+obj = loads(out ,object_pairs_hook=collections.OrderedDict)
+print("############################")
+drawer = obj_draw(obj)
+drawer.draw()
+print("############################")
