@@ -149,9 +149,11 @@ class obj_draw():
 
 # drawer = obj_draw(j)
 # drawer.draw()
-content = u"\xe2\x94\x9c "
-content.encode('latin1').decode('utf8')
-print(content)
+# content = u"\xe2\x94\x9c "
+# content.encode('latin1').decode('utf8')
+# print(content)
+print("test")
+print("├─")
 # obj = json.loads(x)
 
 # class drawer():

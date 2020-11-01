@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+﻿# -*- coding: UTF-8 -*-
 import idc
 import idaapi
 import idautils
@@ -122,27 +122,22 @@ class obj_draw():
     # 绘制当前行
     # @param str 展示的数据
     # @param level 对象层级
-    def draw_cur_line(self, str, level):
+    def draw_cur_line(self, str, level, has_sibling):
         ret = ""
-        if level == 1:
-            # ret = "├─" + str + "\n"
-            # content = u"\xe2\x94\x9c\x94\x80"
-            # content.encode('latin1').decode('utf8')
-            # ret = content + str + "\n"
-            ret = "|--" + str + "\n"
-            # u' '.join((agent_contact, agent_telno)).encode('utf-8').strip()
-            # ret = unicode("├─").encode('utf-8') + str + "\n"
+        if has_sibling == True:
+            # notation = '├─'
+            notation = '|——'
         else:
-            # ret = "|" + "  " * level + "|--" + str + "\n"
-            # ret = "│" + "  " * level + "├─" + str + "\n"
-            ret = "|" + "  " * level + "|--" + str + "\n"
-            # ret = u"\xe2\x94\x82".encode('latin1').decode('utf8')  
-            # + "  " * level + u"\xe2\x94\x9c\x94\x80".encode('latin1').decode('utf8') + str + "\n"
-            # ret = u"".join("├─").encode('utf-8')+ str + "\n"
+            notation = '└─'
+        if level == 1:
+            # ret =  notation + str.encode('utf8') + "\n"
+            ret = str.encode('utf8') + "\n"
+        else:
+            ret =" " + "  " * level + notation + str.encode('utf8') + "\n"
             # 替换特定位置 " " 为 │
             for node in self.path:
                 if node["has_sibling"] == True:
-                    ret = replace_char(ret, node["level"]*2 + 1, "|")
+                    ret = replace_char(ret, node["level"]*2 + 1 , "|")
         return ret
 
     # 绘制当前层的 对象
@@ -153,26 +148,27 @@ class obj_draw():
             val = cur_obj[key]
             # 当前对象，剩余还未渲染节点个数, --item_count 有问题 - -！
             item_count-=1
+            has_sibling = item_count > 0
             if type(val) == str:
-                self.picture += self.draw_cur_line(val, level)
+                self.picture += self.draw_cur_line(val, level, has_sibling)
             elif type(val) == dict:
                 if len(val) == 0:
-                    self.picture += self.draw_cur_line(key, level)
+                    self.picture += self.draw_cur_line(key, level, has_sibling)
                     continue
                 self.path_step_in(level, item_count>0)
-                self.picture += self.draw_cur_line(key, level)
+                self.picture += self.draw_cur_line(key, level, has_sibling)
                 self.draw_cur_level(val, level+1)
                 self.path_step_out()
             elif type(val) == OrderedDict:
                 if len(val) == 0:
-                    self.picture += self.draw_cur_line(key, level)
+                    self.picture += self.draw_cur_line(key, level, has_sibling)
                     continue
                 self.path_step_in(level, item_count>0)
-                self.picture += self.draw_cur_line(key, level)
+                self.picture += self.draw_cur_line(key, level, has_sibling)
                 self.draw_cur_level(val, level+1)
                 self.path_step_out()
             elif type(val) == unicode:
-                self.picture += self.draw_cur_line(val.decode('utf8'), level)
+                self.picture += self.draw_cur_line(val.decode('utf8'), level, has_sibling)
             else:
                 #self.picture += self.draw_cur_line(val, level)
                 print("unknow type %s" % type(val))
@@ -180,7 +176,6 @@ class obj_draw():
     
     def draw(self):
         self.draw_cur_level(self.obj, 1)
-        print("[+]Done")
         print(self.picture)
 
 
