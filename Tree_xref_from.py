@@ -4,6 +4,7 @@ import idaapi
 import idautils
 import sys
 import idaapi
+import time
 from json import loads
 from json import JSONDecoder
 import collections
@@ -177,6 +178,12 @@ class obj_draw():
     def draw(self):
         self.draw_cur_level(self.obj, 1)
         print(self.picture)
+        ts_now = time.localtime(time.time())
+        uni_name = "picture_"+ str(ts_now.tm_year)+"_" + str(ts_now.tm_mon) + "_"+str(ts_now.tm_mday)+"_"+str(ts_now.tm_hour)+"_"+str(ts_now.tm_min)
+        with open(uni_name, "w+") as fout:
+            fout.write(self.picture)
+            fout.close
+            os.system("notepad " + uni_name)
 
 
 """
