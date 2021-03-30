@@ -118,10 +118,17 @@ try{
             mod_name: "%s",     // replace with module name 
             fun_addr: 0x%x,       // replace with function address
             fun_before: function (args, _this) {
-                send("[+]call %s ****************************");     // replace with function name
+                send("[+]call %s 0x%x >>>>>>>>>>>>>>>>>>>>>>>");     // replace with function name
+                try{
+                    var trace = Thread.backtrace(_this.context,Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join("\\n");
+                    send("[*]stack trace:\\n " + trace);
+                }
+                catch(e) {
+                    send("[!]failed to dump stack trace " + e)
+                }
             },
             fun_after: function (retval, _this) {
-                send("[+]Leaving %s ****************************")     // replace with function name
+                send("[+]Leaving %s <<<<<<<<<<<<<<<<<<<<<<<<<")     // replace with function name
             }
     })
 }catch(e) {
@@ -157,9 +164,9 @@ def gen_frida_hook_script(addr_list):
     whole_line = ""
     for fun_addr in addr_list:
         fun_name = GetFunctionName(fun_addr)
-        script_line = hook_fun_template % (module_name, fun_addr, fun_name, fun_name)
+        script_line = hook_fun_template % (module_name, fun_addr, fun_name, fun_addr, fun_name)
         whole_line += script_line
-    print "whole line %s " % whole_line
+    #print "whole line %s " % whole_line
     scripts_ = hook_caller % whole_line
     fd,tmp_js_file = tempfile.mkstemp()
     tmp_js_file += ".js"
