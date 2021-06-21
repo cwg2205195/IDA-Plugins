@@ -1,5 +1,4 @@
 # -*- coding: UTF-8 -*-
-# -*- coding:utf-8 -*-
 
 # ======= import =======
 import idautils
@@ -16,7 +15,7 @@ class PluginUtil(idaapi.plugin_t):  # 继承 idaapi.plugin_t
     comment = "jack sparrow plugin util"
 
     wanted_name = "jack sparrow"  # 插件的名称，在IDA界面导航栏中显示 Edit->Plugins->myplugin
-    wanted_hotkey = "Alt-F6"  # 插件的快捷键
+    wanted_hotkey = "Alt-Z"  # 插件的快捷键
     help = "jack sparrow util pluin graph view"
 
     def init(self): 
@@ -32,7 +31,8 @@ class PluginUtil(idaapi.plugin_t):  # 继承 idaapi.plugin_t
         return idaapi.PLUGIN_OK  # return PLUGIN_KEEP
     
     def run(self, arg):
-        PluginUtil.PluginUtilImpl.main()  # 注意这里的调用方式是从python中模块的文件夹开始
+        # 目录名.文件名.函数名
+        util.plugin_util_impl.main()  # 注意这里的调用方式是从python中模块的文件夹开始
     
     def term(self):
         idaapi.msg(">>> jack sparrow util plugin ends. {0}\n".format(datetime.now()))
